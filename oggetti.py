@@ -1,9 +1,14 @@
+#!/usr/bin/env python3
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import StaleElementReferenceException
+
 # from selenium.common.exceptions import NoSuchElementException
 # from selenium.webdriver.chrome.options import Options
 # from fake_useragent import UserAgent
@@ -12,18 +17,14 @@ import time
 import csv
 import datetime
 
-
 products = []
 # -------------- USER INPUT
 un = "customer"
 pw = "123456"
-headless = 'f'       # t or f | T or F
+headless = 't'       # t or f | T or F
 url = "https://oggetti.com/login/?loggedout=true&wp_lang=en_US"
 filename = 'test1'
 # ---------------------
-
-# fix xpaths
-# results_flag_sel = "//span[@class='col-6 text-left']//span[@class='ng-star-inserted']"
 
 category1 = ""
 category2 = ""
@@ -66,15 +67,16 @@ def login(un, pw):
     time.sleep(5)
     # blocked here
 
-    # sub categories
-
 def extract_cat1():
+    global tmp_cat1
+    tmp_cat1 = ""
     urls = []
     # category1 / menu
-    menu_cat_sel = "//ul[@id='menu-main-menu']/li[1]/a" # category links
+    menu_cat_sel = "//ul[@id='menu-main-menu']/li[position()<4]/a" # category links
     menu_cat_links = driver.find_elements(By.XPATH, menu_cat_sel)
     for cat_link in menu_cat_links:
         link = cat_link.get_attribute('href')
+        tmp_cat1 = cat_link.get_attribute("textContent")
         if link not in category1_urls:
             urls.append(link)
     return urls
@@ -102,10 +104,12 @@ def extract_cat2():
 def extract_prod_links():
     urls=[]
     
-    # scrape category1 for product links
+    # scrape category2 for product links
     for link in category2_urls:
     # for link in category2_urls[1:2]:
         driver.get(link)
+        time.sleep(8)
+        pagination() #display full catalog before extracting links
         prod_links_sel = "//h3/a" # product links
         prod_links = driver.find_elements(By.XPATH,prod_links_sel)
         cat_flag_sel = "//div[@class='woocommerce-result-count hidden-md hidden-sm hidden-xs']"
@@ -116,86 +120,168 @@ def extract_prod_links():
             link = i.get_attribute('href')
             if link not in product_urls:
                 urls.append(link)
-        #runs pagination function
-        pagination()
     return urls
 
 
 def parse_prod_links():
     for link in product_urls:
         driver.get(link)
-        image_flag_sel = "//div[@class='zoomWindow']"
-        WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.XPATH, image_flag_sel))
-            )
-        #----- extract data
+        print(link)
+        time.sleep(2)
+        get_variants()
+        
+
+def extract_data():
+    global product_info
+
+    try:
+        pcode = driver.find_element(By.XPATH,"//span[@class='sku']").get_attribute("textContent")
+    except NoSuchElementException:
+        pcode = ''
+    try:
+        pname = driver.find_element(By.XPATH,"//h1[@itemprop='name']").get_attribute("textContent")
+    except NoSuchElementException:
+        pname = ''
+    category1 = tmp_cat1
+    try:
+        category2 = driver.find_element(By.XPATH,"//div[@class='breadcrumb']//a[2]").get_attribute("textContent")
+    except NoSuchElementException:
+        category2 = ''
+    try:
+        image1 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[1]//a").get_attribute("href")
+    except:
+        image1 = ''
+    try:
+        description = driver.find_element(By.XPATH,"//div[@id='tab-description']").get_attribute("innerHTML")
+    except NoSuchElementException:
+        description = ''
+    try:
+        msrp = driver.find_element(By.XPATH,"//div[@class='price']//span[@class='woocommerce-Price-amount amount']").get_attribute("textContent")
+    except NoSuchElementException:
+        msrp = ''
+    try:
+        discounted_price = driver.find_element(By.XPATH,"//div[@class='price']/span").get_attribute("textContent")
+    except NoSuchElementException:
+        discounted_price = ''
+    try:
+        image2 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[2]//a").get_attribute("href")
+    except:
+        image2 = ''
+    try:
+        image3 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[3]//a").get_attribute("href")
+    except:
+        image3 = ''
+    try:
+        image4 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[4]//a").get_attribute("href")
+    except:
+        image4 = ''        
+    try:
+        image5 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[5]//a").get_attribute("href")
+    except:
+        image5 = ''
+    try:
+        installation_instruction = driver.find_element(By.XPATH,"//a[normalize-space()='Installation Instructions']").get_attribute("href")
+    except:
+        installation_instruction = ''
+    try:
+        product_detail_label1 = driver.find_element(By.XPATH,"//table[@class='woocommerce-product-attributes shop_attributes']//tr[1]/th").get_attribute("textContent")
+    except NoSuchElementException:
+        product_detail_label1 = ''
+    try:
+        variant_description = driver.find_element(By.XPATH,"//div[@class='woocommerce-variation-description']").get_attribute("textContent")
+    except NoSuchElementException:
+        variant_description = ''
+    try:
+        stock_availability = driver.find_element(By.XPATH,"//div[@class='woocommerce-variation-availability'] | //p[@class='stock in-stock']").get_attribute("textContent")
+    except NoSuchElementException:
+        stock_availability = ''
+    try:
+        dimensions = driver.find_element(By.XPATH,"//th[normalize-space()='Dimensions']/following-sibling::td").get_attribute("textContent")
+    except NoSuchElementException:
+        dimensions = ''
+    try:
+        finish_color = driver.find_element(By.XPATH,"//th[normalize-space()='Finish/Color']/following-sibling::td").get_attribute("textContent")
+    except NoSuchElementException:
+        finish_color = ''
+    try:
+        specicification_sheet = driver.find_element(By.XPATH,"//a[normalize-space()='Specification Sheet']").get_attribute("href")
+    except NoSuchElementException:
+        specicification_sheet = ''
+    today = datetime.datetime.today()
+    scrape_date = today.strftime("%d/%m/%Y")
+    supplier = "oggetti"
+    pageUrl = driver.current_url
+    
+    product_info = {
+        'product_code': pcode,
+        'product_name': pname,
+        'category1': category1,
+        'category2': category2,
+        'image1': image1,
+        'image2': image2,
+        'image3': image3,
+        'image4': image4,
+        'image5': image5,
+        'description': description,
+        'msrp': msrp,
+        'discounted_price': discounted_price,
+        'installation_instruction': installation_instruction,
+        'product_detail_label1': product_detail_label1,
+        'variant_description': variant_description,
+        'stock_availability':stock_availability,
+        'dimensions':dimensions,
+        'finish_color': finish_color,
+        'scrape_date': scrape_date,
+        'supplier': supplier,
+        'pageUrl': pageUrl
+    }
+    if checkVar == True:
+        product_info[f'variant1'] = tmp_var1
+        product_info['variantLabel1'] = tmp_varLabel1
+
+        # variants = var_list
+        # print(variants)
+        # for variant in variants:
+        #     # variant[i] = var_list[i]
+        #     product_info['variant1'] = variant
+        #     product_info['variantLabel1'] = tmp_varLabel1
+
+
+    print(f'pcode: {pcode} pname: {pname}')
+    products.append(product_info)
+    #call pagination function
+    pagination()
+
+
+def get_variants():
+    global checkVar
+    global tmp_varLabel1
+    global tmp_var1
+    global data
+    # global var_list
+    try:
+        variant_elem = driver.find_element(By.XPATH,"//table[@class='variations']/preceding-sibling::div[not(@data-product_variations='[]')]/following-sibling::table[@class='variations']//tr[1]/td[@class='value']/select | //table[@class='variations']//tr[1]/td[@class='value']/div/@class[not(contains(.,'hidden'))]/parent::div")
+        no_stock_sel = "//span[@class='stock']" #check for no stock
         try:
-            pcode = driver.find_element(By.XPATH,"//span[@class='sku']").get_attribute("textContent")
+            driver.find_element(By.XPATH,no_stock_sel)
+            checkVar = False
+            data = extract_data()
+            return
         except NoSuchElementException:
-            pcode = ''
-        try:
-            pname = driver.find_element(By.XPATH,"//h1[@itemprop='name']").get_attribute("textContent")
-        except NoSuchElementException:
-            pname = ''
-        try:
-            image1 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[1]//a").get_attribute("href")
-        except:
-            image1 = ''
-        try:
-            description = driver.find_element(By.XPATH,"//div[@id='tab-description']").get_attribute("innerHTML")
-        except NoSuchElementException:
-            description = ''
-        try:
-            msrp = driver.find_element(By.XPATH,"//div[@class='price']//span[@class='woocommerce-Price-amount amount']").get_attribute("textContent")
-        except NoSuchElementException:
-            msrp = ''
-        try:
-            image2 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[2]//a").get_attribute("href")
-        except:
-            image2 = ''
-        try:
-            image3 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[3]//a").get_attribute("href")
-        except:
-            image3 = ''
-        try:
-            image4 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[4]//a").get_attribute("href")
-        except:
-            image4 = ''        
-        try:
-            image5 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[5]//a").get_attribute("href")
-        except:
-            image5 = ''
-        try:
-            installation_instruction = driver.find_element(By.XPATH,"//a[normalize-space()='Installation Instructions']").get_attribute("href")
-        except:
-            installation_instruction = ''
-        try:
-            product_detail_label1 = driver.find_element(By.XPATH,"//table[@class='woocommerce-product-attributes shop_attributes']//tr[1]/th").get_attribute("textContent")
-        except NoSuchElementException:
-            product_detail_label1 = ''
-        today = datetime.datetime.today()
-        scrape_date = today.strftime("%d/%m/%Y")
-        pageUrl = driver.current_url
-        global product_info
-        product_info = {
-            'product_code': pcode,
-            'product_name': pname,
-            'image1': image1,
-            'image2': image2,
-            'image3': image3,
-            'image4': image4,
-            'image5': image5,
-            'description': description,
-            'msrp': msrp,
-            'installation_instruction': installation_instruction,
-            'product_detail_label1': product_detail_label1,
-            'scrape_date': scrape_date,
-            'pageUrl': pageUrl
-        }
-        print(f'pcode: {pcode} pname: {pname}')
-        products.append(product_info)
-        #call pagination function
-        pagination()
+            checkVar = True
+            # var_list = []
+            for i in range(len(variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]"))):
+                # tmp_var = {}
+                variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]")[i].click()
+                tmp_var1 = variant_elem.find_elements(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
+                # tmp_var[i] = variant_elem.find_elements(By.XPATH, ".//option")[i].text
+                # var_list.append(tmp_var[i])
+                tmp_varLabel1 = driver.find_element(By.XPATH,"//table[@class='variations']//td[1]//label").get_attribute("textContent")
+                data = extract_data()
+            return
+    except NoSuchElementException:
+        checkVar = False
+        data = extract_data()
 
 def pagination():
     found = False
@@ -207,15 +293,19 @@ def pagination():
             )
         # Scroll to the bottom of the page
         driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
-        time.sleep(5)
+        time.sleep(3)
         # Scroll to the top of the page
         driver.execute_script("window.scrollBy(0, -document.body.scrollHeight);")
-        time.sleep(5)
+        time.sleep(3)
         # Scroll back to the bottom of the page
         driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
-        time.sleep(5)
+        time.sleep(3)
         # Scroll back to the top of the page
         driver.execute_script("window.scrollBy(0, -document.body.scrollHeight);")
+        # Scroll back to the bottom of the page
+        # driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
+        # time.sleep(8)
+
         # loc elem as flag 
         found_flag_scrollable_sel = "//div[@class='woocommerce-result-count hidden-md hidden-sm hidden-xs'][not(contains(.,'all'))]"
         try:
@@ -240,11 +330,22 @@ def save(data):
 if __name__ == '__main__':
     driver = chr_driver(url)
     login(un,pw)
+
+    # test_url = "https://oggetti.com/product/remini-cocktail-base-dark/"
+    # test2_url ="https://oggetti.com/product/este-arm-chair/"
+    # test3_url = "https://oggetti.com/product/a-cote-table/"
+    # # driver.get(test3_url)
+    # urls = [test_url, test2_url, test3_url]
+    # for url in urls:
+    #     driver.get(url)
+    #     get_variants()
+
     category1_urls = extract_cat1()
     category2_urls = extract_cat2()
     product_urls = extract_prod_links()
-    data = parse_prod_links()
-    print(data)
+    parse_prod_links()
+    get_variants()
+    # print(data)
     save(data)
     driver.quit()
 
