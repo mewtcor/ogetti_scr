@@ -281,7 +281,7 @@ def get_variants():
                 #     tmp_var1 = variant_elem.find_element(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
                 # except IndexError:
                 #     tmp_var1 = ""
-                tmp_var1 = variant_elem.find_element(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
+                tmp_var1 = variant_elem.find_elements(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
                 # tmp_var[i] = variant_elem.find_elements(By.XPATH, ".//option")[i].text
                 # var_list.append(tmp_var[i])
                 tmp_varLabel1 = driver.find_element(By.XPATH,"//table[@class='variations']//td[1]//label").get_attribute("textContent")
