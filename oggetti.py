@@ -21,7 +21,7 @@ products = []
 # -------------- USER INPUT
 un = "customer"
 pw = "123456"
-headless = 't'       # t or f | T or F
+headless = 'f'       # t or f | T or F
 url = "https://oggetti.com/login/?loggedout=true&wp_lang=en_US"
 filename = 'test1'
 # ---------------------
@@ -39,12 +39,12 @@ def chr_driver(url):
     op.add_argument("window-size=1920x1080")
     op.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
     serv = Service('/home/m3wt/enzo/chromedriver')
-    if headless == 't' or headless == 'T':
-        op.headless = True
-    elif headless == 'f' or headless == 'F':
-        op.headless = False
-    else:
-        print('check driver headless option')
+    h_mode = input('mode ([h]headless | [f]full): ')
+    op.headless = h_mode == 'h'
+    if not op.headless:
+        if h_mode != 'f':
+            print('check driver headless option')
+
     browser = webdriver.Chrome(service=serv, options=op)
     browser.get(url)
     return browser
@@ -142,7 +142,6 @@ def extract_data():
         pname = driver.find_element(By.XPATH,"//h1[@itemprop='name']").get_attribute("textContent")
     except NoSuchElementException:
         pname = ''
-    category1 = tmp_cat1
     try:
         category2 = driver.find_element(By.XPATH,"//div[@class='breadcrumb']//a[2]").get_attribute("textContent")
     except NoSuchElementException:
@@ -211,7 +210,8 @@ def extract_data():
     scrape_date = today.strftime("%d/%m/%Y")
     supplier = "oggetti"
     pageUrl = driver.current_url
-    
+    # category1 = tmp_cat1
+
     product_info = {
         'product_code': pcode,
         'product_name': pname,
@@ -234,11 +234,15 @@ def extract_data():
         'scrape_date': scrape_date,
         'supplier': supplier,
         'pageUrl': pageUrl
+        # 'variant1': tmp_var1,
+        # 'variantLabel1': tmp_varLabel1
     }
     if checkVar == True:
-        product_info[f'variant1'] = tmp_var1
+        product_info['variant1'] = tmp_var1
         product_info['variantLabel1'] = tmp_varLabel1
-
+    else:
+        product_info['variant1'] = ""
+        product_info['variantLabel1'] = ""
         # variants = var_list
         # print(variants)
         # for variant in variants:
@@ -273,7 +277,11 @@ def get_variants():
             for i in range(len(variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]"))):
                 # tmp_var = {}
                 variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]")[i].click()
-                tmp_var1 = variant_elem.find_elements(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
+                # try:
+                #     tmp_var1 = variant_elem.find_element(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
+                # except IndexError:
+                #     tmp_var1 = ""
+                tmp_var1 = variant_elem.find_element(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
                 # tmp_var[i] = variant_elem.find_elements(By.XPATH, ".//option")[i].text
                 # var_list.append(tmp_var[i])
                 tmp_varLabel1 = driver.find_element(By.XPATH,"//table[@class='variations']//td[1]//label").get_attribute("textContent")
@@ -331,10 +339,11 @@ if __name__ == '__main__':
     driver = chr_driver(url)
     login(un,pw)
 
-    # test_url = "https://oggetti.com/product/remini-cocktail-base-dark/"
-    # test2_url ="https://oggetti.com/product/este-arm-chair/"
-    # test3_url = "https://oggetti.com/product/a-cote-table/"
-    # # driver.get(test3_url)
+    # test1 = "https://oggetti.com/product/remini-cocktail-base-dark/"
+    # test2 ="https://oggetti.com/product/este-arm-chair/"
+    # test3 = "https://oggetti.com/product/a-cote-table/"
+    # test4 = "https://oggetti.com/product/bamboo-tray-grn/"
+    # driver.get(test4)
     # urls = [test_url, test2_url, test3_url]
     # for url in urls:
     #     driver.get(url)
