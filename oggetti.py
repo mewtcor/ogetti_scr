@@ -11,8 +11,11 @@ from selenium.common.exceptions import StaleElementReferenceException
 import time
 import csv
 import datetime
+import logging
+from enum import Enum
 
 products = []
+
 # -------------- USER INPUT
 un = "customer"
 pw = "123456"
@@ -20,7 +23,17 @@ headless = 'f'       # t or f | T or F
 url = "https://oggetti.com/login/?loggedout=true&wp_lang=en_US"
 filename = 'test1'
 
-#-config
+#----------------------------------------------config---
+#-- links
+cat_links_xpaths = [
+    "//ul[@id='menu-main-menu']/li[position()<4]/a",
+    "//h2/a"
+]
+prod_links_xpaths = [
+    "//h3/a"
+    ]
+
+#-- product xpaths
 product_code_xpath = "//span[@class='sku']"
 product_name_xpath = "//h1[@itemprop='name']"
 category2_xpath = "//div[@class='breadcrumb']//a[2]"
@@ -41,11 +54,10 @@ dimensions_xpath = "//th[normalize-space()='Dimensions']/following-sibling::td"
 finish_color_xpath = "//th[normalize-space()='Finish/Color']/following-sibling::td"
 specification_sheet_xpath ="//a[normalize-space()='Specification Sheet']"
 supplier_name = "oggetti"
-# ---------------------
+# ---------------------end---
 
 category1 = ""
 category2 = ""
-count = 0
 category1_urls=[]
 category2_urls=[]
 product_urls=[]
@@ -61,9 +73,10 @@ def chr_driver(url):
     op.headless = h_mode == 'h'
     if not op.headless:
         if h_mode != 'f':
-            print('check driver headless option')
-
+            logging.warning('check driver headless option')
+    logging.debug('Using Selenium WebDriver with Chrome browser')
     browser = webdriver.Chrome(service=serv, options=op)
+    logging.debug(f'Scraping initial URL: {url}')
     browser.get(url)
     return browser
 
@@ -94,18 +107,20 @@ def extract_cat1():
     menu_cat_links = driver.find_elements(By.XPATH, menu_cat_sel)
     for cat_link in menu_cat_links:
         link = cat_link.get_attribute('href')
-        tmp_cat1 = cat_link.get_attribute("textContent")
+        tmp_cat1 = cat_link.get_attribute("textContent") # optional text extract
         if link not in category1_urls:
             urls.append(link)
     return urls
+
 
 def extract_cat2():
     urls=[]
     
     # scrape category1 for product links
-    for link in category1_urls:
+    for cat_link in category1_urls:
     # for link in category1_urls[:1]:
-        driver.get(link)
+        logging.debug(f'Scraping catalogue URL: {cat_link}')
+        driver.get(cat_link)
         cat_flag_sel = "//h1[@class='text-title-heading']"
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.XPATH, cat_flag_sel))
@@ -121,11 +136,11 @@ def extract_cat2():
 
 def extract_prod_links():
     urls=[]
-    
     # scrape category2 for product links
-    for link in category2_urls:
+    for cat_link in category2_urls:
     # for link in category2_urls[1:2]:
-        driver.get(link)
+        logging.debug(f'Scraping catalogue URL: {cat_link}')
+        driver.get(cat_link)
         time.sleep(8)
         pagination() #display full catalog before extracting links
         prod_links_sel = "//h3/a" # product links
@@ -142,88 +157,49 @@ def extract_prod_links():
 
 
 def parse_prod_links():
-    for link in product_urls:
-        driver.get(link)
-        print(link)
-        time.sleep(2)
-        get_variants()
-        
+    if TEST_SCRAPE:
+        for test_url in TEST_URLS:
+            logging.debug(f'Scraping product URL: {test_url}')
+            driver.get(test_url)
+            get_variants()
+            
+    else:
+        for prod_link in product_urls:
+            logging.debug(f'Scraping product URL: {prod_link}')
+            driver.get(prod_link)
+            time.sleep(2)
+            get_variants()
+            
+def get_element_attribute(xpath, attribute):
+    try:
+        return driver.find_element(By.XPATH, xpath).get_attribute(attribute)
+    except NoSuchElementException:
+        return ''
 
+product_counter = 0
 def extract_data():
     global product_info
+    global product_counter
 
-    try:
-        pcode = driver.find_element(By.XPATH,product_code_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        pcode = ''
-    try:
-        pname = driver.find_element(By.XPATH,product_name_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        pname = ''
-    try:
-        category2 = driver.find_element(By.XPATH,category2_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        category2 = ''
-    try:
-        image1 = driver.find_element(By.XPATH,image1_xpath).get_attribute("href")
-    except:
-        image1 = ''
-    try:
-        description = driver.find_element(By.XPATH,description_xpath).get_attribute("innerHTML")
-    except NoSuchElementException:
-        description = ''
-    try:
-        msrp = driver.find_element(By.XPATH,msrp_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        msrp = ''
-    try:
-        discounted_price = driver.find_element(By.XPATH,discount_price_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        discounted_price = ''
-    try:
-        image2 = driver.find_element(By.XPATH,image2_xpath).get_attribute("href")
-    except:
-        image2 = ''
-    try:
-        image3 = driver.find_element(By.XPATH,image3_xpath).get_attribute("href")
-    except:
-        image3 = ''
-    try:
-        image4 = driver.find_element(By.XPATH,image4_xpath).get_attribute("href")
-    except:
-        image4 = ''        
-    try:
-        image5 = driver.find_element(By.XPATH,image5_xpath).get_attribute("href")
-    except:
-        image5 = ''
-    try:
-        installation_instruction = driver.find_element(By.XPATH,installation_instruction_xpath).get_attribute("href")
-    except:
-        installation_instruction = ''
-    try:
-        product_detail_label1 = driver.find_element(By.XPATH,product_detail_label1_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        product_detail_label1 = ''
-    try:
-        variant_description = driver.find_element(By.XPATH,variant_description_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        variant_description = ''
-    try:
-        stock_availability = driver.find_element(By.XPATH,stock_availability_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        stock_availability = ''
-    try:
-        dimensions = driver.find_element(By.XPATH,dimensions_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        dimensions = ''
-    try:
-        finish_color = driver.find_element(By.XPATH,finish_color_xpath).get_attribute("textContent")
-    except NoSuchElementException:
-        finish_color = ''
-    try:
-        specicification_sheet = driver.find_element(By.XPATH,specification_sheet_xpath).get_attribute("href")
-    except NoSuchElementException:
-        specicification_sheet = ''
+    pcode = get_element_attribute(product_code_xpath, "textContent")
+    pname = get_element_attribute(product_name_xpath, "textContent")
+    category2 = get_element_attribute(category2_xpath, "textContent")
+    image1 = get_element_attribute(image1_xpath, "href")
+    description = get_element_attribute(description_xpath, "innerHTML")
+    msrp = get_element_attribute(msrp_xpath, "textContent")
+    discounted_price = get_element_attribute(discount_price_xpath, "textContent")
+    image2 = get_element_attribute(image2_xpath, "href")
+    image3 = get_element_attribute(image3_xpath, "href")
+    image4 = get_element_attribute(image4_xpath, "href")
+    image5 = get_element_attribute(image5_xpath, "href")
+    installation_instruction = get_element_attribute(installation_instruction_xpath, "href")
+    product_detail_label1 = get_element_attribute(product_detail_label1_xpath, "textContent")
+    variant_description = get_element_attribute(variant_description_xpath, "textContent")
+    stock_availability = get_element_attribute(stock_availability_xpath, "textContent")
+    dimensions = get_element_attribute(dimensions_xpath, "textContent")
+    finish_color = get_element_attribute(finish_color_xpath, "textContent")
+    specification_sheet = get_element_attribute(specification_sheet_xpath, "href")
+
     today = datetime.datetime.today()
     scrape_date = today.strftime("%d/%m/%Y")
     supplier = supplier_name
@@ -249,12 +225,11 @@ def extract_data():
         'stock_availability':stock_availability,
         'dimensions':dimensions,
         'finish_color': finish_color,
-        'specicification_sheet' : specicification_sheet,
+        'specicification_sheet' : specification_sheet,
         'scrape_date': scrape_date,
         'supplier': supplier,
         'pageUrl': pageUrl
-        # 'variant1': tmp_var1,
-        # 'variantLabel1': tmp_varLabel1
+
     }
     if checkVar == True:
         product_info['variant1'] = tmp_var1
@@ -268,26 +243,27 @@ def extract_data():
         #     # variant[i] = var_list[i]
         #     product_info['variant1'] = variant
         #     product_info['variantLabel1'] = tmp_varLabel1
-
-
-    print(f'pcode: {pcode} pname: {pname}')
+    product_counter +=1
+    logging.debug(f'{product_counter}.Extracted product: {pcode} | {pname}')
     products.append(product_info)
     #call pagination function
     pagination()
-
 
 def get_variants():
     global checkVar
     global tmp_varLabel1
     global tmp_var1
     global data
+    # global product_counter
+
     # global var_list
-    try:
+    try: # PRODUCTS WITH VARIANTS
         variant_elem = driver.find_element(By.XPATH,"//table[@class='variations']/preceding-sibling::div[not(@data-product_variations='[]')]/following-sibling::table[@class='variations']//tr[1]/td[@class='value']/select | //table[@class='variations']//tr[1]/td[@class='value']/div/@class[not(contains(.,'hidden'))]/parent::div")
         no_stock_sel = "//span[@class='stock']" #check for no stock
         try:
             driver.find_element(By.XPATH,no_stock_sel)
             checkVar = False
+            # product_counter +=1 
             data = extract_data()
             return
         except NoSuchElementException:
@@ -300,10 +276,12 @@ def get_variants():
                 # tmp_var[i] = variant_elem.find_elements(By.XPATH, ".//option")[i].text
                 # var_list.append(tmp_var[i])
                 tmp_varLabel1 = driver.find_element(By.XPATH,"//table[@class='variations']//td[1]//label").get_attribute("textContent")
+                # product_counter +=1 
                 data = extract_data()
             return  
-    except NoSuchElementException:
+    except NoSuchElementException: # NO VARIANTS
         checkVar = False
+        # product_counter +=1 
         data = extract_data()
 
 def pagination():
@@ -348,9 +326,22 @@ def save(data):
         writer = csv.DictWriter(f, fieldnames=product_info.keys())
         writer.writeheader()
         writer.writerows(products)
-    print('data saved')
+    logging.info(f"Export to CSV file {filename} is finished.")
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+                        datefmt='%d-%m-%Y:%H:%M:%S',
+                        level=logging.DEBUG)
+    logging.getLogger("selenium").setLevel(logging.INFO)
+    # ---- block logs from the urllib3.connectionpool logger
+    # Set the root logger's level to debug
+    logging.getLogger().setLevel(logging.DEBUG)
+    # Get the logger for the `urllib3.connectionpool` module
+    connectionpool_logger = logging.getLogger("urllib3.connectionpool")
+    # Set the logger's level to warning, which is above debug
+    connectionpool_logger.setLevel(logging.WARNING)
+
+
     driver = chr_driver(url)
     login(un,pw)
 
@@ -359,17 +350,17 @@ if __name__ == '__main__':
     test3 = "https://oggetti.com/product/a-cote-table/"
     test4 = "https://oggetti.com/product/bamboo-tray-grn/"
     test5 = "https://oggetti.com/product/hanako-cocktail-table/"
-    # driver.get(test5)
-    urls = [test1, test2, test3, test4, test5]
-    for url in urls:
-        driver.get(url)
-        get_variants()
-
-    # category1_urls = extract_cat1()
-    # category2_urls = extract_cat2()
-    # product_urls = extract_prod_links()
-    # parse_prod_links()
-    get_variants()
+    TEST_URLS = [test1,test2, test3, test4, test5]
+    TEST_SCRAPE = False
+    # for url in urls:
+    #     driver.get(url)
+    #     get_variants()
+    
+    category1_urls = extract_cat1()
+    category2_urls = extract_cat2()
+    product_urls = extract_prod_links()
+    parse_prod_links()
+    # get_variants()
     # print(data)
     save(data)
     driver.quit()
