@@ -8,11 +8,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import StaleElementReferenceException
-
-# from selenium.common.exceptions import NoSuchElementException
-# from selenium.webdriver.chrome.options import Options
-# from fake_useragent import UserAgent
-# import re
 import time
 import csv
 import datetime
@@ -231,6 +226,7 @@ def extract_data():
         'stock_availability':stock_availability,
         'dimensions':dimensions,
         'finish_color': finish_color,
+        'specicification_sheet' : specicification_sheet,
         'scrape_date': scrape_date,
         'supplier': supplier,
         'pageUrl': pageUrl
@@ -277,16 +273,12 @@ def get_variants():
             for i in range(len(variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]"))):
                 # tmp_var = {}
                 variant_elem.find_elements(By.XPATH, "./div | .//option[position()>1]")[i].click()
-                # try:
-                #     tmp_var1 = variant_elem.find_element(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
-                # except IndexError:
-                #     tmp_var1 = ""
                 tmp_var1 = variant_elem.find_elements(By.XPATH,"./div/div/following-sibling::span | .//option[position()>1]")[i].text
                 # tmp_var[i] = variant_elem.find_elements(By.XPATH, ".//option")[i].text
                 # var_list.append(tmp_var[i])
                 tmp_varLabel1 = driver.find_element(By.XPATH,"//table[@class='variations']//td[1]//label").get_attribute("textContent")
                 data = extract_data()
-            return
+            return  
     except NoSuchElementException:
         checkVar = False
         data = extract_data()
@@ -343,7 +335,8 @@ if __name__ == '__main__':
     # test2 ="https://oggetti.com/product/este-arm-chair/"
     # test3 = "https://oggetti.com/product/a-cote-table/"
     # test4 = "https://oggetti.com/product/bamboo-tray-grn/"
-    # driver.get(test4)
+    # test5 = "https://oggetti.com/product/hanako-cocktail-table/"
+    # driver.get(test5)
     # urls = [test_url, test2_url, test3_url]
     # for url in urls:
     #     driver.get(url)
