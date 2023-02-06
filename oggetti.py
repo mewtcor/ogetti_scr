@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!env/Scripts/python python
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -19,6 +19,28 @@ pw = "123456"
 headless = 'f'       # t or f | T or F
 url = "https://oggetti.com/login/?loggedout=true&wp_lang=en_US"
 filename = 'test1'
+
+#-config
+product_code_xpath = "//span[@class='sku']"
+product_name_xpath = "//h1[@itemprop='name']"
+category2_xpath = "//div[@class='breadcrumb']//a[2]"
+category1_xapth =""
+description_xpath = "//div[@id='tab-description']"
+image1_xpath = "//div[@id='image-thumbnail']//div[@class='slick-track']/div[1]//a"
+image2_xpath = "//div[@id='image-thumbnail']//div[@class='slick-track']/div[2]//a"
+image3_xpath = "//div[@id='image-thumbnail']//div[@class='slick-track']/div[3]//a"
+image4_xpath = "//div[@id='image-thumbnail']//div[@class='slick-track']/div[4]//a"
+image5_xpath = "//div[@id='image-thumbnail']//div[@class='slick-track']/div[5]//a"
+discount_price_xpath = "//div[@class='price']/span"
+msrp_xpath = "//div[@class='price']//span[@class='woocommerce-Price-amount amount']"
+installation_instruction_xpath = "//a[normalize-space()='Installation Instructions']"
+product_detail_label1_xpath = "//table[@class='woocommerce-product-attributes shop_attributes']//tr[1]/th"
+variant_description_xpath = "//div[@class='woocommerce-variation-description']"
+stock_availability_xpath ="//div[@class='woocommerce-variation-availability'] | //p[@class='stock in-stock']"
+dimensions_xpath = "//th[normalize-space()='Dimensions']/following-sibling::td"
+finish_color_xpath = "//th[normalize-space()='Finish/Color']/following-sibling::td"
+specification_sheet_xpath ="//a[normalize-space()='Specification Sheet']"
+supplier_name = "oggetti"
 # ---------------------
 
 category1 = ""
@@ -31,6 +53,7 @@ products = []
 
 def chr_driver(url):
     op = webdriver.ChromeOptions()
+    op.add_experimental_option('excludeSwitches', ['enable-logging']) #removes the annoying DevTools listening on ws://127.0.0.1 message in the terminal (windows)
     op.add_argument("window-size=1920x1080")
     op.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
     serv = Service('/home/m3wt/enzo/chromedriver')
@@ -130,87 +153,87 @@ def extract_data():
     global product_info
 
     try:
-        pcode = driver.find_element(By.XPATH,"//span[@class='sku']").get_attribute("textContent")
+        pcode = driver.find_element(By.XPATH,product_code_xpath).get_attribute("textContent")
     except NoSuchElementException:
         pcode = ''
     try:
-        pname = driver.find_element(By.XPATH,"//h1[@itemprop='name']").get_attribute("textContent")
+        pname = driver.find_element(By.XPATH,product_name_xpath).get_attribute("textContent")
     except NoSuchElementException:
         pname = ''
     try:
-        category2 = driver.find_element(By.XPATH,"//div[@class='breadcrumb']//a[2]").get_attribute("textContent")
+        category2 = driver.find_element(By.XPATH,category2_xpath).get_attribute("textContent")
     except NoSuchElementException:
         category2 = ''
     try:
-        image1 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[1]//a").get_attribute("href")
+        image1 = driver.find_element(By.XPATH,image1_xpath).get_attribute("href")
     except:
         image1 = ''
     try:
-        description = driver.find_element(By.XPATH,"//div[@id='tab-description']").get_attribute("innerHTML")
+        description = driver.find_element(By.XPATH,description_xpath).get_attribute("innerHTML")
     except NoSuchElementException:
         description = ''
     try:
-        msrp = driver.find_element(By.XPATH,"//div[@class='price']//span[@class='woocommerce-Price-amount amount']").get_attribute("textContent")
+        msrp = driver.find_element(By.XPATH,msrp_xpath).get_attribute("textContent")
     except NoSuchElementException:
         msrp = ''
     try:
-        discounted_price = driver.find_element(By.XPATH,"//div[@class='price']/span").get_attribute("textContent")
+        discounted_price = driver.find_element(By.XPATH,discount_price_xpath).get_attribute("textContent")
     except NoSuchElementException:
         discounted_price = ''
     try:
-        image2 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[2]//a").get_attribute("href")
+        image2 = driver.find_element(By.XPATH,image2_xpath).get_attribute("href")
     except:
         image2 = ''
     try:
-        image3 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[3]//a").get_attribute("href")
+        image3 = driver.find_element(By.XPATH,image3_xpath).get_attribute("href")
     except:
         image3 = ''
     try:
-        image4 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[4]//a").get_attribute("href")
+        image4 = driver.find_element(By.XPATH,image4_xpath).get_attribute("href")
     except:
         image4 = ''        
     try:
-        image5 = driver.find_element(By.XPATH,"//div[@id='image-thumbnail']//div[@class='slick-track']/div[5]//a").get_attribute("href")
+        image5 = driver.find_element(By.XPATH,image5_xpath).get_attribute("href")
     except:
         image5 = ''
     try:
-        installation_instruction = driver.find_element(By.XPATH,"//a[normalize-space()='Installation Instructions']").get_attribute("href")
+        installation_instruction = driver.find_element(By.XPATH,installation_instruction_xpath).get_attribute("href")
     except:
         installation_instruction = ''
     try:
-        product_detail_label1 = driver.find_element(By.XPATH,"//table[@class='woocommerce-product-attributes shop_attributes']//tr[1]/th").get_attribute("textContent")
+        product_detail_label1 = driver.find_element(By.XPATH,product_detail_label1_xpath).get_attribute("textContent")
     except NoSuchElementException:
         product_detail_label1 = ''
     try:
-        variant_description = driver.find_element(By.XPATH,"//div[@class='woocommerce-variation-description']").get_attribute("textContent")
+        variant_description = driver.find_element(By.XPATH,variant_description_xpath).get_attribute("textContent")
     except NoSuchElementException:
         variant_description = ''
     try:
-        stock_availability = driver.find_element(By.XPATH,"//div[@class='woocommerce-variation-availability'] | //p[@class='stock in-stock']").get_attribute("textContent")
+        stock_availability = driver.find_element(By.XPATH,stock_availability_xpath).get_attribute("textContent")
     except NoSuchElementException:
         stock_availability = ''
     try:
-        dimensions = driver.find_element(By.XPATH,"//th[normalize-space()='Dimensions']/following-sibling::td").get_attribute("textContent")
+        dimensions = driver.find_element(By.XPATH,dimensions_xpath).get_attribute("textContent")
     except NoSuchElementException:
         dimensions = ''
     try:
-        finish_color = driver.find_element(By.XPATH,"//th[normalize-space()='Finish/Color']/following-sibling::td").get_attribute("textContent")
+        finish_color = driver.find_element(By.XPATH,finish_color_xpath).get_attribute("textContent")
     except NoSuchElementException:
         finish_color = ''
     try:
-        specicification_sheet = driver.find_element(By.XPATH,"//a[normalize-space()='Specification Sheet']").get_attribute("href")
+        specicification_sheet = driver.find_element(By.XPATH,specification_sheet_xpath).get_attribute("href")
     except NoSuchElementException:
         specicification_sheet = ''
     today = datetime.datetime.today()
     scrape_date = today.strftime("%d/%m/%Y")
-    supplier = "oggetti"
+    supplier = supplier_name
     pageUrl = driver.current_url
     # category1 = tmp_cat1
 
     product_info = {
         'product_code': pcode,
         'product_name': pname,
-        'category1': category1,
+        #'category1': category1,
         'category2': category2,
         'image1': image1,
         'image2': image2,
@@ -331,21 +354,21 @@ if __name__ == '__main__':
     driver = chr_driver(url)
     login(un,pw)
 
-    # test1 = "https://oggetti.com/product/remini-cocktail-base-dark/"
-    # test2 ="https://oggetti.com/product/este-arm-chair/"
-    # test3 = "https://oggetti.com/product/a-cote-table/"
-    # test4 = "https://oggetti.com/product/bamboo-tray-grn/"
-    # test5 = "https://oggetti.com/product/hanako-cocktail-table/"
+    test1 = "https://oggetti.com/product/remini-cocktail-base-dark/"
+    test2 ="https://oggetti.com/product/este-arm-chair/"
+    test3 = "https://oggetti.com/product/a-cote-table/"
+    test4 = "https://oggetti.com/product/bamboo-tray-grn/"
+    test5 = "https://oggetti.com/product/hanako-cocktail-table/"
     # driver.get(test5)
-    # urls = [test_url, test2_url, test3_url]
-    # for url in urls:
-    #     driver.get(url)
-    #     get_variants()
+    urls = [test1, test2, test3, test4, test5]
+    for url in urls:
+        driver.get(url)
+        get_variants()
 
-    category1_urls = extract_cat1()
-    category2_urls = extract_cat2()
-    product_urls = extract_prod_links()
-    parse_prod_links()
+    # category1_urls = extract_cat1()
+    # category2_urls = extract_cat2()
+    # product_urls = extract_prod_links()
+    # parse_prod_links()
     get_variants()
     # print(data)
     save(data)
