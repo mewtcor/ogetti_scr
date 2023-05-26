@@ -1,0 +1,84 @@
+{
+    "initial_url": "https://www.moeshome.com/",
+    "config_links": {
+        "initial_page_xpath": {
+            "xpath": "//ul[@class='navbar-nav flex flex-row align-items-center']/li[position()<last()]//a"
+        },
+        "category1": {
+            "xpath": "//div[@id='product-listing']/div[1]/div[2]/div//a"
+        },
+        "category2": {
+            "xpath": ""
+        },
+        "products": {
+            "xpath": "//div[@itemtype='http://schema.org/ItemList']/div//a[@class='p-0']"
+        },
+        "next_page": {
+            "xpath": "//div[contains(@class,'pagination')]//a[contains(.,'Next')]/@class[not(contains(.,'disabled'))]/parent::a"
+        }
+    },
+    "config_others": {
+        "view_all": {
+            "xpath": "//span[normalize-space()='View all']"
+        },
+        "variants_flag": {
+            "xpath": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div"
+        },
+        "variants": {
+            "xpath": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div"
+        },
+        "cookie": {
+            "xpath": "//button[contains(@class,'white moes-btn undefined')]"
+        }
+    },
+    "config_products": {
+        "product_code": {
+            "xpath": "//div[@id='spec-row']//td[normalize-space()='SKU']/following-sibling::td"
+        },
+        "product_name": {
+            "xpath": "//div[@class='product-name']/h2"
+        },
+        "category1": {
+            "xpath": ""
+        },
+        "category2": {
+            "xpath": ""
+        },
+        "description": {
+            "xpath": "//div[@class='overview-col-wrapper']"
+        },
+        "image1": {
+            "xpath": "//div[@class='slick-track']/div[1]//picture/source[1]"
+        },
+        "images": {
+            "xpath": "//div[@class='slick-track']/div//picture/source[1]"
+        }
+    },
+    "custom_attributes": {
+        "variant1":"//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]/div[1]/span[2]",
+        "variant2": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]/div[1]/span[2]",
+        "variant_label1": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]/div[1]/span[1]",
+        "variant_label2": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]/div[1]/span[1]",
+        "swatch_image1": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]/div[2]/div/@class[contains(.,'active')]/parent::div/img",
+        "swatch_image2": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]/div[2]/div/@class[contains(.,'active')]/parent::div/img",
+        "price": "//span[@itemprop='price']",
+        "color": "//div[@id='spec-row']//td[normalize-space()='Color']/following-sibling::td",
+        "product_materials": "//div[@id='spec-row']//td[normalize-space()='Product Materials']/following-sibling::td",
+        "arm_height": "//div[@id='spec-row']//td[normalize-space()='Arm Height']/following-sibling::td",
+        "seat_height": "//div[@id='spec-row']//td[normalize-space()='Seat Height']/following-sibling::td",
+        "style": "//div[@id='spec-row']//td[normalize-space()='Style']/following-sibling::td",
+        "general_dimensions": "//div[@id='spec-row']//td[normalize-space()='General Dimensions']/following-sibling::td",
+        "arm_width": "//div[@id='spec-row']//td[normalize-space()='Arm Width']/following-sibling::td",
+        "arm_depth": "//div[@id='spec-row']//td[normalize-space()='Arm Depth']/following-sibling::td",
+        "seat_width": "//div[@id='spec-row']//td[normalize-space()='Seat Width']/following-sibling::td",
+        "seat_depth": "//div[@id='spec-row']//td[normalize-space()='Seat Depth']/following-sibling::td",
+        "seating": "//div[@id='spec-row']//td[normalize-space()='Seating']/following-sibling::td",
+        "country_of_origin": "//div[@id='spec-row']//td[normalize-space()='Country Of Origin']/following-sibling::td",
+        "assembly_instructions": "//div[@id='spec-row']//td[normalize-space()='Assembly Instructions']/following-sibling::td/a",
+        "bed_size": "//div[@id='spec-row']//td[normalize-space()='Bed Size']/following-sibling::td",
+        "shape": "//div[@id='spec-row']//td[normalize-space()='Shape']/following-sibling::td",
+        "orientation": "//div[@id='spec-row']//td[normalize-space()='Orientation']/following-sibling::td",
+        "leg_height": "//div[@id='spec-row']//td[normalize-space()='Leg Height']/following-sibling::td",
+        "supplier_name": "moeshome"
+    }
+}
