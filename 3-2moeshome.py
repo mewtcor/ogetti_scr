@@ -7,6 +7,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException
 from time import sleep
 import csv
 import datetime
@@ -14,6 +15,7 @@ import logging
 import re
 import json
 import undetected_chromedriver as uc
+import os
 
 
 products = []
@@ -27,19 +29,21 @@ tmp_swatch_image2 = ""
 # -------------- USER INPUT
 # un = "customer"
 # pw = "123456"
-filename = 'moeshome-full'
+# file_name = 'moeshome-full'
 
 test1 = "https://www.moeshome.com/living-room/sofas/rodrigo-sofa-black" # no variant
 test2 = "https://www.moeshome.com/benches-stools/lund-stool-black-oak-bc112602" # 1 row variants
 test3 = "https://www.moeshome.com/dining-room/dining-tables/malibu-round-dining-table-natural" # 2-row variants
 test4 = "https://www.moeshome.com/living-room/sofas/abigail-chaise-orange-me105312" # variant 2 - page not found
 test5 = "https://www.moeshome.com/living-room/sectionals/jamara-left-facing-sectional-charcoal-grey-ub101607l" # missing product
+test6 = "https://www.moeshome.com/executive-office-chair-dark-brown-pk108120"
 
-TEST_URLS = [test1]
+TEST_URLS = [test6]
 TEST_MODE = True
 
 with open('3-2config.json', 'r') as f:
     config_json = json.load(f)
+    website_name = (config_json['website'])
     #----------------------- links
     initial_url = (config_json['initial_url'])
     initial_page_xpath = (config_json['config_links']['initial_page_xpath']['xpath'])
@@ -58,6 +62,9 @@ with open('3-2config.json', 'r') as f:
     # ---------------------- custom attributes
     price_xpath = (config_json['custom_attributes']['price'])
     color_xpath = (config_json['custom_attributes']['color'])
+    short_description_xpath = (config_json['custom_attributes']['short_description'])
+    swatch_code_xpath = (config_json['custom_attributes']['swatch_code'])
+    weight_xpath = (config_json['custom_attributes']['weight'])
     product_materials_xpath = (config_json['custom_attributes']['product_materials'])
     arm_height_xpath = (config_json['custom_attributes']['arm_height'])
     seat_height_xpath = (config_json['custom_attributes']['seat_height'])
@@ -90,21 +97,36 @@ category2_urls = []
 product_urls = []
 products = []
 
+
 def chr_driver():
     op = webdriver.ChromeOptions()
-    op.add_experimental_option('excludeSwitches', ['enable-logging']) #removes the annoying DevTools listening on ws://127.0.0.1 message in the terminal (windows)
-    # op.add_argument("window-size=1920x1080")
+    op.add_experimental_option('excludeSwitches', ['enable-logging'])  # removes the annoying DevTools listening on ws://127.0.0.1 message in the terminal (windows)
+    op.add_argument("window-size=1920x1080")
     op.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
     # op.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2}) # disable images
-    serv = Service(r'C:\Users\mewtc\work\vesta\chromedriver')
-    h_mode = input('mode ([h]headless | [f]full): ')
-    op.headless = h_mode == 'h'
-    if not op.headless:
-        if h_mode != 'f':
-            logging.warning('check driver headless option')
+    
+    # Set headless mode to True by default
+    op.headless = True
+    
+    # Ask user input to disable/enable headless mode
+    while True:
+        h_mode = input("Type [h] to enable headless or [f] to run in browser mode: ")
+        if h_mode in ['f', 'F']:
+            op.headless = False
+            logging.warning('Headless mode disabled')
+            break
+        elif h_mode in ['h', 'H']:
+            op.headless = True
+            logging.warning('Headless mode enabled')
+            break
+        else:
+            print("Invalid response.")
 
     logging.debug('Using Selenium WebDriver with Chrome browser')
+    
+    serv = Service(r'C:\Users\mewtc\work\vesta\chromedriver')
     browser = webdriver.Chrome(service=serv, options=op)
+    browser.maximize_window()  # Add this line to maximize the window
     return browser
 
 # def chr_driver():
@@ -253,10 +275,11 @@ def pagination(cat1, cat2):
 def scrape_prod_links():
     global checkVar
     if TEST_MODE is True:
+        logging.debug('Scraper is running on TEST MODE')
         for test_url in TEST_URLS:
             logging.debug(f'Scraping TEST URL: {test_url}')
             driver.get(test_url)
-            allowCookie()
+            # allowCookie()
             # driver.maximize_window()
             # sleep(15)
             WebDriverWait(driver, 10).until(
@@ -271,20 +294,24 @@ def scrape_prod_links():
         for link in product_urls:
             logging.debug(f'Scraping product URL: {link[0]} | category1: {link[1]} | category2: {link[2]}')
             driver.get(link[0])
-            # WebDriverWait(driver, 10).until(
-            #     EC.presence_of_element_located((By.XPATH, image1_xpath))
-            # )
+            
             tmp_cat1 = link[1]
             tmp_cat2 = link[2]
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, image1_xpath))
-            )
+            
+            try:
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, image1_xpath))
+                )
+            except TimeoutException:
+                logging.debug(f'Timeout occurred for URL: {link[0]}. Skipping to the next URL.')
+                continue
+            
             sleep(3)
+            
             if variantsCheck() is True:
                 get_variants(tmp_cat1, tmp_cat2)
             else:
                 extract_data(tmp_cat1, tmp_cat2)
-
 def viewMoreSpecs():
     try:
         viewmorespecs_xpath = "//p[normalize-space()='View more specifications']"
@@ -367,9 +394,11 @@ def extract_data(cat1, cat2):
         variant_label2 = get_element_attribute(variant_label2_xpath, "textContent")
         swatch_image1 = get_element_attribute(swatch_image1_xpath, "src")
         swatch_image2 = get_element_attribute(swatch_image2_xpath, "src")
-
         price = get_element_attribute(price_xpath, "textContent")
         color = get_element_attribute(color_xpath, "textContent")
+        short_description = get_element_attribute(short_description_xpath, "textContent")
+        swatch_code = get_element_attribute(swatch_code_xpath, "textContent")
+        weight = get_element_attribute(weight_xpath, "textContent")
         product_materials = get_element_attribute(product_materials_xpath, "textContent")
         arm_height = get_element_attribute(arm_height_xpath, "textContent")
         seat_height = get_element_attribute(seat_height_xpath, "textContent")
@@ -407,6 +436,9 @@ def extract_data(cat1, cat2):
             # 'image1': image1,
             'price' : price,
             'color' : color,
+            'short_description': short_description,
+            'swatch_code': swatch_code,
+            'weight': weight,
             'product_materials': product_materials,
             'arm_height': arm_height,
             'seat_height': seat_height,
@@ -721,20 +753,38 @@ def extract_variant2_data(var_elem2):
         tmp_swatch_image2 = ""
 ########----------- end of get_variants()
 
-def save():
-    #save to csv
-    with open(f'{filename}.csv', 'w', newline='',encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=product_info.keys())
-        writer.writeheader()
-        writer.writerows(products)
-    logging.info(f"Export to CSV file {filename} is finished.")
+# def save():
+#     #save to csv
+#     # file_name = input('Filename: ')
+#     with open(f'{filename}.csv', 'w', newline='',encoding='utf-8') as f:
+#         writer = csv.DictWriter(f, fieldnames=product_info.keys())
+#         writer.writeheader()
+#         writer.writerows(products)
+#     logging.info(f"Export to CSV file {filename} is finished.")
 
 def allowCookie():
     cookie_btn = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.XPATH, cookie_xpath))
         )
     cookie_btn.click()
- 
+
+def save():
+    file_name = f'{website_name}_{datetime.datetime.now().strftime("%d%m%Y")}'
+    count = 1
+    file_exists = True
+
+    while file_exists:
+        file_name_with_count = f'{file_name}_{count}'
+        file_exists = os.path.isfile(f'{file_name_with_count}.csv')
+        count += 1
+
+    with open(f'{file_name_with_count}.csv', 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=product_info.keys())
+        writer.writeheader()
+        writer.writerows(products)
+    logging.info(f"Export to CSV file {file_name_with_count} is finished.")
+
+
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                         datefmt='%d-%m-%Y:%H:%M:%S',
@@ -758,7 +808,7 @@ if __name__ == '__main__':
         driver.get(initial_url)
         sleep(40)      
         # login(un,pw)
-        # allowCookie()
+        allowCookie()
         category1_urls = scrape_initial_page()
         get_category_links()
         get_prod_links()

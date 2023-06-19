@@ -1,4 +1,5 @@
 {
+    "website": "moeshome",
     "initial_url": "https://www.moeshome.com/",
     "config_links": {
         "initial_page_xpath": {
@@ -55,6 +56,7 @@
         }
     },
     "custom_attributes": {
+        "short_description": "//p[@class='product-description']",
         "variant1":"//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]/div[1]/span[2]",
         "variant2": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]/div[1]/span[2]",
         "variant_label1": "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]/div[1]/span[1]",
@@ -64,6 +66,8 @@
         "price": "//span[@itemprop='price']",
         "color": "//div[@id='spec-row']//td[normalize-space()='Color']/following-sibling::td",
         "product_materials": "//div[@id='spec-row']//td[normalize-space()='Product Materials']/following-sibling::td",
+        "swatch_code": "//div[@id='spec-row']//td[normalize-space()='Swatch Code']/following-sibling::td",
+        "weight": "//div[@id='spec-row']//td[normalize-space()='Weight']/following-sibling::td",
         "arm_height": "//div[@id='spec-row']//td[normalize-space()='Arm Height']/following-sibling::td",
         "seat_height": "//div[@id='spec-row']//td[normalize-space()='Seat Height']/following-sibling::td",
         "style": "//div[@id='spec-row']//td[normalize-space()='Style']/following-sibling::td",
